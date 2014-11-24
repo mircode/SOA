@@ -1,1 +1,2 @@
 not suppoert chinese
+test success
