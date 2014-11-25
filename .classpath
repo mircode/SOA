@@ -4,6 +4,13 @@
 	<classpathentry kind="src" path="src_client"/>
 	<classpathentry kind="src" path="src_server"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.7.0_71"/>
-	<classpathentry kind="lib" path="/zkClient/src"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/zkClient"/>
+	<classpathentry kind="lib" path="C:/Users/Administrator/Desktop/NIO/SOA/env/zkclient-master/zkclient-master/lib/log4j-1.2.14.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Administrator/Desktop/NIO/SOA/env/zkclient-master/zkclient-master/lib/commons-io-1.4.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Administrator/Desktop/NIO/SOA/env/zkclient-master/zkclient-master/lib/hamcrest-core-1.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Administrator/Desktop/NIO/SOA/env/zkclient-master/zkclient-master/lib/junit-4.7.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Administrator/Desktop/NIO/SOA/env/zkclient-master/zkclient-master/lib/mockito-core-1.8.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Administrator/Desktop/NIO/SOA/env/zkclient-master/zkclient-master/lib/objenesis-1.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Administrator/Desktop/NIO/SOA/env/zkclient-master/zkclient-master/lib/zookeeper-3.3.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
