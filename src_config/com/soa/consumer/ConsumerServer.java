@@ -1,78 +1,79 @@
 package com.soa.consumer;
 
 import java.util.List;
-import java.util.Random;
 
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkDataListener;
 import org.apache.log4j.Logger;
 
 import com.soa.common.SoaServer;
-import com.soa.provider.ProviderServer;
 
 public class ConsumerServer implements IZkChildListener,IZkDataListener{
-	
+	/**
+	 * 所属服务分类
+	 */
 	private String serviceName="Service-A";
-	private String serviceType="consumer";
-	private String connectStr="0";
-	private List serverList=null;
-	private String routeRouls=null;
+	/**
+	 * 服务消费者
+	 */
+	private  final String serviceType="consumer";
+	/**
+	 * 链接串 客户端IP
+	 */
+	private String connectStr="01";
+	/**
+	 * 单例
+	 */
+	private static SoaServer soa=new SoaServer();
 	/**
 	 * 日志记录
 	 */
 	protected final static Logger Log = Logger.getLogger(ConsumerServer.class);
-	private SoaServer soa=new SoaServer();
 	
-	public List search(){
-		return serverList;
-	}
-	public void rigist(){
-		 soa.registerService(serviceName,serviceType,connectStr,"", new IZkChildListener(){
-
-			@Override
-			public void handleChildChange(String parentPath,
-					List<String> currentChilds) throws Exception {
-				Log.info("有新的客户端连接====================");
-				for(String server:currentChilds){
-					Log.info(server);
-				}
-				Log.info("有新的客户端连接====================");
-				
-			}
-			 
-			 
-		 });
-		 soa.registerService(serviceName,"provider","","", this);
-	}
-	
-	public static void main(String args[]){
-		
-		ConsumerServer consumerServer=new ConsumerServer();
-		System.out.println(consumerServer.search());
-		try {
-			Thread.sleep(Long.MAX_VALUE);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public ConsumerServer(){
+		//感知服务端变化
+		soa.registerService(serviceName,"provider",null,null,this);
+		//感知路由规则变化
+		soa.readConfig(this);
+		//向服务中线注册消费者
+		soa.registerService(serviceName,serviceType,connectStr,null,this);
 	}
 
 	@Override
 	public void handleChildChange(String parentPath, List<String> currentChilds)
 			throws Exception {
-		serverList=currentChilds;
-		System.out.println(currentChilds);
-		
+		if(parentPath.indexOf(serviceType)>-1){
+			Log.info("客户端-当前列表");
+			//调用服务中心的查询接口查询服务
+			List<String> currentChildsList=soa.searchService(serviceName,serviceType);
+			for(String server:currentChildsList){
+				Log.info(server);
+			}
+		}else{
+			Log.info("服务端-当前列表");
+			//调用服务中心的查询接口查询服务
+			List<String> currentChildsList=soa.searchService(serviceName,"provider");
+			for(String server:currentChildsList){
+				Log.info(server);
+			}
+		}
 	}
 	@Override
 	public void handleDataChange(String dataPath, Object data) throws Exception {
-		routeRouls=data.toString();
-		System.out.println("系统规则发生变化"+routeRouls);
-		
+		Log.info("路由规则发生变化:"+data);
 	}
 	@Override
 	public void handleDataDeleted(String dataPath) throws Exception {
-		// TODO Auto-generated method stub
 		
+	}
+	
+	public static void main(String args[]){
+		ConsumerServer consumerServer=new ConsumerServer();
+		Log.info("启动客户端成功"+consumerServer);
+		try {
+			Thread.sleep(Long.MAX_VALUE);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 }

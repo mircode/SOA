@@ -2,10 +2,8 @@ package com.soa.common;
 
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkDataListener;
@@ -43,15 +41,12 @@ public class SoaServer {
 		if(zkClient!=null){
 			initRoot(); 				//初始化-基本节点结构
 			initRoute();				//初始化-路由规则
-			
-			/*initServerListener();		//初始化-服务提供者监听
-			initProviderListener();		//初始化-消费者监听
-			initConfigDateListener();	//初始化-配置监听*/
 		}
 	}
 	/**
 	 * 初始化配置服务的根节点和其他持久节点
 	 */
+	@SuppressWarnings("unchecked")
 	private void initRoot(){
 		//创建的持久节点
 		String root="SOA服务配置中心";
@@ -65,15 +60,13 @@ public class SoaServer {
 		configMap.put("/Config_Center/Server",server);
 		
 		//创建节点
-		Set<String> keys = configMap.keySet();  
-		Iterator<String> iterator = keys.iterator();  
 		for (Map.Entry entry : configMap.entrySet()) {  
 			   String path = entry.getKey().toString();  
 			   String nodeDate = (String) entry.getValue();  
 			   boolean isExist=zkClient.exists(path);
 				if(!isExist){
 					try {
-						zkClient.create(path, nodeDate.getBytes("UTF-8"), CreateMode.PERSISTENT);
+						zkClient.create(path, nodeDate.getBytes(charSet), CreateMode.PERSISTENT);
 					} catch (ZkInterruptedException e) {
 						e.printStackTrace();
 					} catch (IllegalArgumentException e) {
@@ -101,7 +94,7 @@ public class SoaServer {
 			String configPath="/Config_Center/Config/routRules";
 			boolean isExist=zkClient.exists(configPath);
 			if(!isExist){
-				zkClient.create(configPath, routRules.getBytes("UTF-8"), CreateMode.PERSISTENT);
+				zkClient.create(configPath, routRules.getBytes(charSet), CreateMode.PERSISTENT);
 			}
 			Log.info("加载路由规则成功");
 		} catch (Exception e) {
@@ -109,44 +102,75 @@ public class SoaServer {
 		}
 	}
 	/**
-	 * 注册服务
+	 * 注册服务(服务提供者和消费者)
+	 * 
+	 * @param serviceName 服务名称
+	 * @param nodeType	     节点类型 
+	 * @param connetUrl   连接串
+	 * @param object	     节点数据
+	 * @param listenter   服务节点监听
+	 * 
 	 */
 	public void registerService(String serviceName,String nodeType,String connetUrl,Object object,IZkChildListener listenter){
 		
 		String parentPath="/Config_Center/Server/"+serviceName+"/"+nodeType;
+		String registerPath=parentPath+"/"+connetUrl;
 		
+		//判断是否节点服务类型是否创建过
 		boolean isExist=zkClient.exists(parentPath);
 		if(!isExist){
-			try{
-				zkClient.create("/Config_Center/Server/"+serviceName, (serviceName+nodeType).getBytes("UTF-8"), CreateMode.PERSISTENT);
-				zkClient.create(parentPath, (serviceName+nodeType).getBytes("UTF-8"), CreateMode.PERSISTENT);
-				zkClient.create(parentPath+"/"+connetUrl, object, CreateMode.EPHEMERAL);
-				zkClient.subscribeChildChanges(parentPath,listenter);
-				Log.info("注册新的服务成功["+parentPath+"]");
-			}catch (Exception e){
-				e.printStackTrace();
-				Log.debug("注册新的服务失败["+parentPath+"]",e);
-			}
+				
+			//创建服务持久父节点,并绑定监听事件
+			zkClient.createPersistent(parentPath, true);
+			zkClient.subscribeChildChanges(parentPath,listenter);
+			Log.info("绑定节点监听事件成功["+parentPath+"]");
 			
+			if(connetUrl!=null){
+				//创建按临时子节点
+				zkClient.create(registerPath,object,CreateMode.EPHEMERAL);
+				Log.info("注册新的服务成功["+parentPath+"]");
+			}
 		}else{
-			zkClient.create(parentPath+"/"+connetUrl, object, CreateMode.EPHEMERAL);
+			
+			//绑定事件
+			zkClient.subscribeChildChanges(parentPath,listenter);
+			Log.info("绑定节点监听事件成功["+parentPath+"]");
+			
+			if(connetUrl!=null){
+				//如果存在父节点直接挂载在父节点下
+				zkClient.create(registerPath,object,CreateMode.EPHEMERAL);
+				
+				Log.info("注册新的服务成功["+parentPath+"]");
+			}
 		}
 	}
 	/**
-	 * 查询服务
+	 * 查询服务列表
+	 * @param serviceName
+	 * @param nodeType
+	 * @return
 	 */
 	public List<String> searchService(String serviceName,String nodeType){
 		//查询服务
 		if(nodeType==null||"".equals(nodeType)){
 			nodeType="provider";
 		}
-		String parentPath="/Config_Center/Server/"+serviceName+"/"+nodeType+"/";
+		String parentPath="/Config_Center/Server/"+serviceName+"/"+nodeType;
 		boolean isExist=zkClient.exists(parentPath);
 		List<String> serverList=null;
 		if(isExist){
 			 serverList=zkClient.getChildren(parentPath);
 		}
 		return serverList;
+	}
+	/**
+	 * 查询服务列表
+	 * @param serviceName
+	 * @param nodeType
+	 * @return
+	 */
+	public List<String> searchService(String serviceName){
+		return this.searchService(serviceName, null);
 	}
 	/**
 	 * 更新系统配置
