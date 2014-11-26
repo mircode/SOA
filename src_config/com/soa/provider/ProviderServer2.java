@@ -12,11 +12,11 @@ import com.soa.common.SoaServer;
  * @author Administrator
  *
  */
-public class ProviderServer implements IZkChildListener{
+public class ProviderServer2 implements IZkChildListener{
 	//单例
 	private String serviceName="Service-A";
 	private String serviceType="provider";
-	private String connectStr="4";
+	private String connectStr="3";
 	
 	/**
 	 * 日志记录
