@@ -26,7 +26,7 @@ public class BaseClient {
 		//更具方法名查找对应的子服务
 		
 		//返回对应的协议类型和链接串
-		 String connentStr=ConsumerServer.search();
+		 //String connentStr=ConsumerServer.search();
 		//更具不同协议的不同类型调用不同方法
 		
 		//如果是WebService接口
