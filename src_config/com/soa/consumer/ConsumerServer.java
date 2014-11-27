@@ -1,6 +1,11 @@
 package com.soa.consumer;
 
+import groovy.lang.GroovyClassLoader;
+import groovy.lang.GroovyObject;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkDataListener;
@@ -61,6 +66,20 @@ public class ConsumerServer implements IZkChildListener,IZkDataListener{
 	@Override
 	public void handleDataChange(String dataPath, Object data) throws Exception {
 		Log.info("路由规则发生变化:"+data);
+		
+		 String sourceCode=(String)data;
+	     System.out.println(sourceCode);
+	     GroovyClassLoader groovyClassLoader=new GroovyClassLoader(Thread.currentThread().getContextClassLoader());
+		 Class<?> groovyClass=groovyClassLoader.parseClass(sourceCode);
+		 GroovyObject groovyObject=(GroovyObject)groovyClass.newInstance();
+			
+		 Map<String,Integer> serverListMap=new HashMap<String,Integer>();
+		 List<String> currentChildsList=soa.searchService(serviceName,serviceType);
+		 for(String server:currentChildsList){
+			 serverListMap.put(server, 1);
+		 }
+		 String server=(String)groovyObject.invokeMethod("execute", serverListMap);
+		 System.out.println(server);
 	}
 	@Override
 	public void handleDataDeleted(String dataPath) throws Exception {

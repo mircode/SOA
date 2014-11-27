@@ -1,5 +1,11 @@
 package com.soa.route;
 
+import groovy.lang.GroovyClassLoader;
+import groovy.lang.GroovyObject;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -24,11 +30,44 @@ public class RouteRule {
 	 */
 	protected final static Logger Log = Logger.getLogger(RouteRule.class);
 	
-	public static void main(String args[]){
+	public static void main(String args[]) throws Exception{
+		
+		
+		 String sourceCode=bufferedReader("DynamicRule.conf");
+	   //  System.out.println(sourceCode);
+	    /* GroovyClassLoader groovyClassLoader=new GroovyClassLoader(Thread.currentThread().getContextClassLoader());
+		 Class<?> groovyClass=groovyClassLoader.parseClass(sourceCode);
+		 GroovyObject groovyObject=(GroovyObject)groovyClass.newInstance();
+			
+		 Map<String,Integer> serverListMap=new HashMap<String,Integer>();
+		 serverListMap.put("127.0.0.1:8080", 1);
+		 serverListMap.put("127.0.0.2:8080", 1);
+		 serverListMap.put("127.0.0.3:8080", 1);
+		 serverListMap.put("127.0.0.4:8080", 1);
+			
+		 String server=(String)groovyObject.invokeMethod("execute", serverListMap);
+		 System.out.println(server);*/
+       
+		
 		SoaServer soa=new SoaServer();
-		soa.writeConfig("new rules");
+		//soa.writeConfig("com.soa.route.RouteRule:roundRobin");
+		soa.writeConfig(sourceCode);
 		Log.info("改变路由规则");
 	}
+	  public static String bufferedReader(String path) throws Exception{
+			 InputStream in=RouteRule.class.getResourceAsStream(path);
+			 System.out.println(in);
+			 BufferedReader br=new BufferedReader(new InputStreamReader(in));
+	         String temp=null;
+	         StringBuffer sb=new StringBuffer();
+	         temp=br.readLine();
+	         while(temp!=null){
+	             sb.append(temp+" ");
+	             temp=br.readLine();
+	         }
+	       
+			return sb.toString();
+	     }
 	/**
 	 * 轮询
 	 * @param serverMap 服务IP和权重
