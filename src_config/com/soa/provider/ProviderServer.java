@@ -1,5 +1,7 @@
 package com.soa.provider;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.List;
 
 import org.I0Itec.zkclient.IZkChildListener;
@@ -17,7 +19,7 @@ public class ProviderServer implements IZkChildListener{
 	/**
 	 * 所属服务分类
 	 */
-	private String serviceName="Service-A";
+	private String serviceName=null;
 	/**
 	 * 服务提供者
 	 */
@@ -25,11 +27,11 @@ public class ProviderServer implements IZkChildListener{
 	/**
 	 * 链接串 HOST:PORT
 	 */
-	private String connectStr="4";
+	private String connectStr=null;
 	/**
 	 * 权重
 	 */
-	private String weight="18";
+	private String weight=null;
 	/**
 	 * 单例
 	 */
@@ -39,12 +41,55 @@ public class ProviderServer implements IZkChildListener{
 	 */
 	protected final static Logger Log = Logger.getLogger(ProviderServer.class);
 
-	
-	public ProviderServer(){
-		//感知客户端
-		soa.registerService(serviceName,"consumer",null,null,this);
-		//向服务中线注册服务
-		soa.registerService(serviceName, serviceType,connectStr,weight,this);
+	/**
+	 * 无参数构造函数
+	 */
+	public ProviderServer(String serviceName){
+		InetAddress addr=null;
+		try {
+			addr = InetAddress.getLocalHost();
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
+		String ip=addr.getHostAddress().toString();
+		String connectStr=ip;
+		String weight="1";
+		this.serviceName=serviceName;
+		this.connectStr=connectStr;
+		this.weight=weight;
+	}
+	/**
+	 * 构造函数
+	 * @param serviceName 服务名称
+	 * @param connectStr  链接串
+	 * @param weight	     权重
+	 */
+	public ProviderServer(String serviceName,String connectStr,String weight){
+		this.serviceName=serviceName;
+		this.connectStr=connectStr;
+		this.weight=weight;
+	}
+	/**
+	 * 服务启动入口
+	 */
+	public void start(){
+		
+		//注册节点,并启动监听
+		final ProviderServer serverListener=this;
+		new Thread(new Runnable(){
+			public void run(){
+				//感知客户端
+				soa.registerService(serviceName,"consumer",null,null,serverListener);
+				//向服务中线注册服务
+				soa.registerService(serviceName, serviceType,connectStr,weight,serverListener);
+				
+				try {
+					Thread.sleep(Long.MAX_VALUE);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
 	}
 	/**
 	 * 设置服务监听
@@ -69,16 +114,40 @@ public class ProviderServer implements IZkChildListener{
 		}
 	}
 	
-	public static void main(String args[]){
+	public static void main(String args[]) throws UnknownHostException{
 		
-		ProviderServer providerServer=new ProviderServer();
+		InetAddress addr=InetAddress.getLocalHost();
+		String ip=addr.getHostAddress().toString();
+		String connectStr=ip;
+		String serviceName="Server-A";
+		String weight="1";
+		ProviderServer providerServer=new ProviderServer(serviceName,connectStr,weight);
+		providerServer.start();
+		
 		Log.info("启动服务成功"+providerServer);
 		
-		try {
-			Thread.sleep(Long.MAX_VALUE);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		
 	}
 	
+	public String getServiceName() {
+		return serviceName;
+	}
+	public void setServiceName(String serviceName) {
+		this.serviceName = serviceName;
+	}
+	public String getConnectStr() {
+		return connectStr;
+	}
+	public void setConnectStr(String connectStr) {
+		this.connectStr = connectStr;
+	}
+	public String getWeight() {
+		return weight;
+	}
+	public void setWeight(String weight) {
+		this.weight = weight;
+	}
+	public String getServiceType() {
+		return serviceType;
+	}
 }

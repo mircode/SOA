@@ -164,6 +164,15 @@ public class SoaServer {
 		return serverList;
 	}
 	/**
+	 * 读取某个节点数据
+	 * @param path 节点路径
+	 * @return
+	 */
+	public Object readData(String path){
+		Object obj=zkClient.readData(path, true);
+		return obj;
+	}
+	/**
 	 * 查询服务列表
 	 * @param serviceName
 	 * @param nodeType

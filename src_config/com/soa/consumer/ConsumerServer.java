@@ -1,8 +1,7 @@
 package com.soa.consumer;
 
-import groovy.lang.GroovyClassLoader;
-import groovy.lang.GroovyObject;
-
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +16,7 @@ public class ConsumerServer implements IZkChildListener,IZkDataListener{
 	/**
 	 * 所属服务分类
 	 */
-	private String serviceName="Service-A";
+	private String serviceName=null;
 	/**
 	 * 服务消费者
 	 */
@@ -25,7 +24,7 @@ public class ConsumerServer implements IZkChildListener,IZkDataListener{
 	/**
 	 * 链接串 客户端IP
 	 */
-	private String connectStr="01";
+	private String connectStr=null;
 	/**
 	 * 单例
 	 */
@@ -34,16 +33,44 @@ public class ConsumerServer implements IZkChildListener,IZkDataListener{
 	 * 日志记录
 	 */
 	protected final static Logger Log = Logger.getLogger(ConsumerServer.class);
-	
+	/**
+	 * 无参构造方法
+	 */
 	public ConsumerServer(){
-		//感知服务端变化
-		soa.registerService(serviceName,"provider",null,null,this);
-		//感知路由规则变化
-		soa.readConfig(this);
-		//向服务中线注册消费者
-		soa.registerService(serviceName,serviceType,connectStr,null,this);
+		
 	}
-
+	/**
+	 * 构造函数
+	 * @param serviceName 服务名称
+	 * @param connectStr  链接串
+	 */
+	public ConsumerServer(String serviceName,String connectStr){
+		this.serviceName=serviceName;
+		this.connectStr=connectStr;
+	}
+	/**
+	 * 服务启动入口
+	 */
+	public void start(){
+		//注册节点,并启动监听
+		final ConsumerServer serverListener=this;
+		new Thread(new Runnable(){
+			public void run(){
+				//感知服务端变化
+				soa.registerService(serviceName,"provider",null,null,serverListener);
+				//感知路由规则变化
+				soa.readConfig(serverListener);
+				//向服务中线注册消费者
+				soa.registerService(serviceName,serviceType,connectStr,null,serverListener);
+				
+				try {
+					Thread.sleep(Long.MAX_VALUE);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
+	}
 	@Override
 	public void handleChildChange(String parentPath, List<String> currentChilds)
 			throws Exception {
@@ -65,34 +92,34 @@ public class ConsumerServer implements IZkChildListener,IZkDataListener{
 	}
 	@Override
 	public void handleDataChange(String dataPath, Object data) throws Exception {
-		Log.info("路由规则发生变化:"+data);
-		
-		 String sourceCode=(String)data;
-	     System.out.println(sourceCode);
-	     GroovyClassLoader groovyClassLoader=new GroovyClassLoader(Thread.currentThread().getContextClassLoader());
-		 Class<?> groovyClass=groovyClassLoader.parseClass(sourceCode);
-		 GroovyObject groovyObject=(GroovyObject)groovyClass.newInstance();
-			
-		 Map<String,Integer> serverListMap=new HashMap<String,Integer>();
-		 List<String> currentChildsList=soa.searchService(serviceName,serviceType);
-		 for(String server:currentChildsList){
-			 serverListMap.put(server, 1);
-		 }
-		 String server=(String)groovyObject.invokeMethod("execute", serverListMap);
-		 System.out.println(server);
+		 Log.info("路由规则发生变化:"+data);
 	}
 	@Override
 	public void handleDataDeleted(String dataPath) throws Exception {
 		
 	}
-	
-	public static void main(String args[]){
-		ConsumerServer consumerServer=new ConsumerServer();
+	public Map<String,Integer> searchService(String serviceName,String serviceType){
+		 List<String> currentChildsList=soa.searchService(serviceName,serviceType);
+		 
+		 Map<String,Integer> serverListMap=new  HashMap<String,Integer>();
+		 
+		 for(String server:currentChildsList){
+			 String weight=(String) soa.readData(server);
+			 Integer w=(weight==null?1:Integer.parseInt(weight));
+			 serverListMap.put(server,w);
+		 }
+		 return serverListMap;
+	}
+	public static void main(String args[]) throws UnknownHostException{
+		
+		InetAddress addr=InetAddress.getLocalHost();
+		String ip=addr.getHostAddress().toString();
+		String connectStr=ip;
+		String serviceName="Server-A";
+		
+		ConsumerServer consumerServer=new ConsumerServer(serviceName,connectStr);
+		consumerServer.start();
 		Log.info("启动客户端成功"+consumerServer);
-		try {
-			Thread.sleep(Long.MAX_VALUE);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		
 	}
 }

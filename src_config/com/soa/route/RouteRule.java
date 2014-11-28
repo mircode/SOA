@@ -172,4 +172,18 @@ public class RouteRule {
 		return server;
 		
 	}
+	public String dynamicRule(Map<String,Integer> serverListMap,String sourceCode){
+		String server=null;
+		try{
+			GroovyClassLoader groovyClassLoader=new GroovyClassLoader(Thread.currentThread().getContextClassLoader());
+			Class<?> groovyClass=groovyClassLoader.parseClass(sourceCode);
+			GroovyObject groovyObject=(GroovyObject)groovyClass.newInstance();
+			server=(String)groovyObject.invokeMethod("execute", serverListMap);
+		}catch(Exception e){
+			Log.debug("动态路由算法失效-采用随机算法进行路由选择",e);
+			server=this.random(serverListMap);
+		}
+		 return server;
+	}
+	
 }

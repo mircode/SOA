@@ -1,7 +1,5 @@
 package com.soa.client.common;
 
-import com.soa.consumer.ConsumerServer;
-import com.soa.provider.ProviderServer;
 
 /**
  * 服务动态的动态注册和路由
